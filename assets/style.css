@@ -1,0 +1,73 @@
+
+body {
+  background: rgb(177, 179, 252);
+  font-size: 1.5em;
+  line-height: 1.6;
+  font-weight: 400;
+  margin-button: 10px;
+  font-family: "Open Sans", "HelveticaNeue", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: white;
+  }
+
+.banner
+{
+    background: linear-gradient(90deg,rgb(8, 135, 255), rgb(239, 125, 250));
+    border-radius: 20px;
+    user-select: none;
+    padding: 10px 10px 10px 10px;
+    background-size: 200%;
+    -webkit-animation: Gradient 8s infinite linear;
+    -moz-animation: Gradient 8s infinite linear;
+    animation: Gradient 8s infinite linear;
+}
+@-webkit-keyframes Gradient
+{
+    0% {background-position: 30% 0%}
+    50% {background-position: 80% 0%}
+    100% {background-position: 30% 0%}
+}
+
+@-moz-keyframes Gradient
+{
+   0% {background-position: 30% 0%}
+    50% {background-position: 80% 0%}
+    100% {background-position: 30% 0%}
+}
+@keyframes Gradient
+{
+  0% {background-position: 0% 0%}
+    50% {background-position: 40% 0%}
+    100% {background-position: 0% 0%}
+}
+
+.Flex
+{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.headlines
+{
+    display: block;
+}
+
+.opas
+{
+    font-size: 20px;
+    color: grey;
+    margin-top: 15px;
+    background: rgba(255,255,255,0.5);
+}
+
+.button
+{
+    background: linear-gradient(90deg,rgb(8, 135, 255), rgb(239, 125, 250));
+    color: white;
+    font-size: 20px;
+    height: 40px;
+    width: 200px;
+    border-radius: 40px;
+    border-color:white;
+}
