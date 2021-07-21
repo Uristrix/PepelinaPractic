@@ -52,7 +52,7 @@ def upload_():
                                 style={'padding': '40px 0px 0px 0px'}), ),
             html.Div([
                 html.Div(daq.BooleanSwitch(id='heat', on=True, label='heat sens', color='rgb(8, 135, 255)')),
-                html.Div(daq.BooleanSwitch(id='GisMeteo', on=True, label='GisMeteo', color='rgb(239, 125, 250)'))
+                html.Div(daq.BooleanSwitch(id='GisMeteo', on=False, label='GisMeteo', color='rgb(239, 125, 250)'))
             ], style={'display': 'flex', 'justify-content': 'space-between'}
             )
 
@@ -82,6 +82,7 @@ def sensation_():
         ],
         style={'width': '20%', 'display': 'inline-block', 'padding': '10px 0px 30px 50px'}
     )
+
 
 def treatment_():
     return html.Div(
@@ -127,6 +128,8 @@ def matrix_():
         ],
         style={'width': '20%', 'display': 'inline-block', 'padding': '10px 0px 30px 50px'}
     )
+
+
 def graf():
     return
 
@@ -153,8 +156,8 @@ app.layout = html.Div(
             className='banner opas',
             children=
             [
-                dcc.Graph(id='graph', config={"staticPlot": False, "editable": True, "displayModeBar": False}),
-            ], style={'width': '98%', 'padding': '20px 20px 20px 20px'}
+                dcc.Graph(id='graph', config={"staticPlot": False, "editable": False, "displayModeBar": False}),
+            ], style={'width': '99.55%', 'padding': '10px 5px 5px 5px'}
 
         )
     ]
@@ -212,7 +215,7 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
         yaxis=dict(tickfont_size=20, title=''),
         xaxis=dict(tickfont_size=20, title=''),
         title='',
-        showlegend=True,
+        #showlegend=True,
         autosize=True,
         height=710,
         colorway=['rgb(0,48,255)', 'rgb(0,204,58)', 'rgb(255,154,0)',
@@ -236,17 +239,18 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
             buttons=list([
                 dict(count=1, label="1H", step="hour", stepmode="backward"),
                 dict(count=3, label="3H", step="hour", stepmode="backward"),
+                dict(count=12, label="12H", step="hour", stepmode="backward"),
                 dict(count=1, label="1D", step="day", stepmode="todate"),
                 dict(step="all")
             ])
         )
     ),
-    fig.update_yaxes(linecolor='Gainsboro', gridcolor='Gainsboro', zerolinecolor='Gainsboro',)
+    fig.update_yaxes(linecolor='Gainsboro', gridcolor='Gainsboro', zerolinecolor='Gainsboro', )
 
     if sensor is None and temp_ is None and hum_ is None:
         return fig
 
-    x_arr, y_arr, sens, time = [], [], [], []
+    min_, max_, dt_begin, dt_end = None, None, None, None
 
     if sensor:
         for el in sensor:
@@ -254,8 +258,11 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
             x_arr, y_arr = sc.get_data(uName, serial, item, data)
             x_arr, y_arr = sc.sort(round_, x_arr, y_arr)
 
+            min_, max_ = sc.find_min_max(y_arr, min_, max_)
+            dt_begin, dt_end = sc.find_date(x_arr[0], x_arr[-1], dt_begin, dt_end)
+
             fig.add_trace(go.Scatter(x=x_arr, y=y_arr, mode=type_, name="{} ({})".format(uName + ' ' + serial, item),
-                                     hovertemplate="<b>%{y}</b>"))
+                                     hovertemplate="<b>%{y}</b>", showlegend=False))
 
     if temp_ and hum_:
         uName_temp, serial_temp, item_temp = sc.get_info(temp_)
@@ -266,8 +273,12 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
 
         sens = sc.temp_efficiency(t_arr, h_arr)
         time, sens = sc.sort(round_, time, sens)
+
+        min_, max_ = sc.find_min_max(sens, min_, max_)
+        dt_begin, dt_end = sc.find_date(time[0], time[-1], dt_begin, dt_end)
+
         fig.add_trace(go.Scatter(x=time, y=sens, line_color="black", mode=type_, name="temp_efficiency",
-                                 hovertemplate="<b>%{y}</b>"))
+                                 hovertemplate="<b>%{y}</b>", showlegend=False))
 
     if measured_ and etolonic_:
         uName_meas, serial_meas, item_meas = sc.get_info(measured_)
@@ -278,23 +289,36 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
 
         pol = sc.matrix(meas_arr, etolon_arr)
         time, sens = sc.sort(round_, time, pol)
+
+        min_, max_ = sc.find_min_max(sens, min_, max_)
+        dt_begin, dt_end = sc.find_date(time[0], time[-1], dt_begin, dt_end)
+
         fig.add_trace(go.Scatter(x=time, y=pol, line_color="violet", mode=type_, name="матричная хуйня",
-                                 hovertemplate="<b>%{y}</b>"))
+                                 hovertemplate="<b>%{y}</b>", showlegend=False))
+
+    if gis_ and dt_begin and dt_end:
+        from datetime import date
+        x_arr, y_temp, y_hum = sc.GetMeteo(date(dt_begin.year, dt_begin.month, 1), date(dt_end.year, dt_end.month, 1))
+        x_arr, y_temp, y_hum = sc.Meteosort(x_arr, y_temp, y_hum, dt_begin, dt_end)
+
+        min_, max_ = sc.find_min_max(y_temp, min_, max_)
+        min_, max_ = sc.find_min_max(y_hum, min_, max_)
+
+        fig.update_layout(
+            legend=dict(orientation='h', yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+
+        fig.add_trace(go.Scatter(x=x_arr, y=y_temp, mode=type_, name="GisMeteo temp", hovertemplate="<b>%{y}</b>",
+                                 visible='legendonly')),
+        fig.add_trace(go.Scatter(x=x_arr, y=y_hum, mode=type_, name="GisMeteo press", hovertemplate="<b>%{y}</b>",
+                                 visible='legendonly'))
 
     if heat_:
-        dc, ann = sc.heat(x_arr, y_arr, sens)
+        dc, ann = sc.heat(dt_begin, dt_end, min_, max_)
         fig.update_layout(shapes=dc, annotations=ann)
-    if gis_:
-        from datetime import datetime as dt, date
 
-        date_begin, date_end = dt.strptime(x_arr[0], '%Y-%m-%d %H:%M:%S'), dt.strptime(x_arr[-1], '%Y-%m-%d %H:%M:%S')
-        date_begin, date_end = date(date_begin.year, date_begin.month, 1), date(date_end.year, date_end.month, 1)
-        x_arr, y_temp, y_hum = sc.GetMeteo(date_begin, date_end)
-        print(x_arr)
-        print(y_temp)
-        print(y_hum)
     return fig
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run_server(debug=False)

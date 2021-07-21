@@ -24,13 +24,19 @@ def csv_to_json(df):
     uName, serial = split_for_csv(list(df)[1])
     names = df.loc[0].tolist()
 
+    pos = None
+    for i in range(len(names)):
+        if names[i] != names[i]:
+            pos = i
+            break
+
     for i in range(1, len(df.index)):
         temp = df.loc[i].tolist()
         dc[i] = {
             'Date': temp[0],
             'uName': uName,
             'serial': serial,
-            'data': {lb: val for lb, val in list(zip(names[1:], temp[1:]))}
+            'data': {lb: val for lb, val in list(zip(names[1:pos], temp[1:pos]))}
         }
     return dc
 
@@ -94,7 +100,7 @@ def sort(round_, x_arr, y_arr):
         else:
             if len(temp) != 0:
                 y_res.append(sorting(temp, round_))
-                x_res.append(date[j])
+                x_res.append(str(date[j]))
                 temp.clear()
             j += 1
 
@@ -154,7 +160,7 @@ def temp_efficiency(t_arr, h_arr):
     return res
 
 
-def heat(x_arr, y_arr, sens):
+def heat(dt_begin, dt_end, min_, max_):
     heat_ = [
         {'heat': 'WTF', 'min': -36, 'max': -30, 'color': 'blue'},
         {'heat': 'extremely cold', 'min': -30, 'max': -24, 'color': 'DeepSkyBlue'},
@@ -167,31 +173,47 @@ def heat(x_arr, y_arr, sens):
         {'heat': 'hot', 'min': 24, 'max': 30, 'color': 'OrangeRed'},
         {'heat': 'very hot', 'min': 30, 'max': 36, 'color': 'red'}
     ]
-    min_, max_ = find_min_max(y_arr, sens)
     heat_ = correct_dict(heat_, min_, max_)
     print(heat_)
     dc, ann = [], []
     for i in range(len(heat_)):
         dc.append(dict(
-            fillcolor=heat_[i]['color'], opacity=0.2, line={"width": 0}, type="rect",
-            x0=x_arr[0], x1=x_arr[-1], xref="x",
+            # fillcolor=heat_[i]['color'], line={"width": 3, "color": heat_[i]['color'], "dash": 'dot'},type="line",
+            fillcolor=heat_[i]['color'], opacity=0.3, line={"width": 0}, type="rect",
+            x0=str(dt_begin), x1=str(dt_end), xref="x",
             y0=heat_[i]['min'], y1=heat_[i]['max'], yref="y"))
 
         ann.append(dict(
-            x=x_arr[0], y=(heat_[i]['max'] + heat_[i]['min']) / 2,
-            arrowcolor="black", showarrow=False, font=dict(size=20, color='black'), text=heat_[i]['heat'], xref="x",
+            x=1, y=(heat_[i]['max'] + heat_[i]['min']) / 2,
+            arrowcolor="black", showarrow=False, font=dict(size=20, color='black'), text=heat_[i]['heat'], xref="paper",
             yanchor="bottom", yref="y"))
-    print(dc)
+
     return dc, ann
 
 
-def find_min_max(y_arr, sens):
-    res = y_arr.copy()
-    res.extend(sens)
-    return min(res), max(res)
+def find_min_max(arr, min_, max_):
+    min_new, max_new = min(arr), max(arr)
+    if not min_ or min_new < min_:
+        min_ = min_new
+    if not max_ or max_new > max_:
+        max_ = max_new
+    return min_, max_
+
+
+def find_date(dt_begin_new, dt_end_new, dt_begin, dt_end):
+
+    dt_begin_new = dt.strptime(dt_begin_new, '%Y-%m-%d %H:%M:%S')
+    dt_end_new = dt.strptime(dt_end_new, '%Y-%m-%d %H:%M:%S')
+    if not dt_begin or dt_begin_new > dt_begin:
+        dt_begin = dt_begin_new
+    if not dt_end or dt_end_new < dt_end:
+        dt_end = dt_end_new
+
+    return dt_begin, dt_end
 
 
 def correct_dict(heat_, min_, max_):
+    print(heat_, min_, max_)
     pos_min, pos_max = 0, -1
     for i in range(len(heat_)):
         if min_ < heat_[i]['max']:
@@ -201,7 +223,7 @@ def correct_dict(heat_, min_, max_):
         if max_ < heat_[i]['max']:
             pos_max = i
             break
-
+    print(heat_, pos_min, pos_max)
     heat_ = heat_[pos_min: pos_max + 1]
     heat_[0]['min'] = min_
     heat_[-1]['max'] = max_
@@ -215,12 +237,13 @@ def correct_dict(heat_, min_, max_):
 
 
 from bs4 import BeautifulSoup
+import calendar
 import requests
 
 
 def get_html_page(url):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 ' 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 '
                       '(KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36'}
     try:
         r = requests.get(url, headers=headers)
@@ -236,6 +259,7 @@ def create_Meteo_URL(date_begin):
 
 
 def GetMeteo(date_begin, date_end):
+
     x_arr, y_temp, y_hum = [], [], []
 
     html = get_html_page(create_Meteo_URL(date_begin))
@@ -248,7 +272,7 @@ def GetMeteo(date_begin, date_end):
         y_hum.append((float(day[2].text) + float(day[7].text)) / 2)  # Давление
 
     if date_begin != date_end:
-        newDate = date_begin + td(days=1)
+        newDate = date_begin + td(days=calendar.monthrange(date_begin.year, date_begin.month)[1])
         next_x, next_y_temp, next_y_hum = GetMeteo(newDate, date_end)
         x_arr.extend(next_x)
         y_temp.extend(next_y_temp)
@@ -257,7 +281,12 @@ def GetMeteo(date_begin, date_end):
     return x_arr, y_temp, y_hum
 
 
-#matrix
+def Meteosort(arr, temp, hum, dt_begin, dt_end):
+    pos1, pos2 = arr.index(dt_begin.strftime('%Y-%m-%d')), arr.index(dt_end.strftime('%Y-%m-%d'))
+    arr, temp, hum = arr[pos1:pos2 + 1], temp[pos1:pos2 + 1], hum[pos1:pos2 + 1]
+    return arr, temp, hum
+
+# matrix
 import numpy as np
 
 
@@ -267,18 +296,18 @@ def matrix(x_arr, y_arr):
     for i in range(2):
         res = 0
         for j in range(len(y_arr)):
-            res += (x_arr[j]**i)*y_arr[j]
+            res += (x_arr[j] ** i) * y_arr[j]
         free.append(res)
-    #free = np.asarray(free)
+    # free = np.asarray(free)
     print(free)
     for i in range(2):
         for j in range(2):
             res = 0
             for k in range(len(x_arr)):
-                res += x_arr[k]**(i+j)
+                res += x_arr[k] ** (i + j)
             mat[i].append(res)
-    #mat = np.asarray(mat)
+    # mat = np.asarray(mat)
     print(mat, np.linalg.det(mat))
-    #mat[0]=free
-    #print(mat, np.linalg.det(mat))
+    # mat[0]=free
+    # print(mat, np.linalg.det(mat))
     return list(np.linalg.solve(mat, free))
