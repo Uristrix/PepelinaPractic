@@ -297,7 +297,6 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
         x_arr, y_temp, y_hum = sc.Meteosort(x_arr, y_temp, y_hum, dt_begin, dt_end)
 
         min_, max_ = sc.find_min_max(y_temp, min_, max_)
-        min_, max_ = sc.find_min_max(y_hum, min_, max_)
 
         fig.update_layout(
             legend=dict(orientation='h', yanchor="bottom", y=1.02, xanchor="right", x=1)
@@ -316,4 +315,4 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
 
 
 if __name__ == '__main__':
-    app.run_server(debug=False)
+    app.run_server(debug=True)

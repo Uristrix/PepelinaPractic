@@ -224,7 +224,10 @@ def correct_dict(heat_, min_, max_):
             pos_max = i
             break
     print(heat_, pos_min, pos_max)
-    heat_ = heat_[pos_min: pos_max]
+    if pos_max == pos_min:
+        heat_ = heat_[pos_min: pos_max+1]
+    else:
+        heat_ = heat_[pos_min: pos_max]
     print(heat)
     heat_[0]['min'] = min_
     heat_[-1]['max'] = max_
