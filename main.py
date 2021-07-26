@@ -129,11 +129,6 @@ def matrix_():
         style={'width': '20%', 'display': 'inline-block', 'padding': '10px 0px 30px 50px'}
     )
 
-
-def graf():
-    return
-
-
 app = dash.Dash(__name__)
 app.title = 'Practice Pepelina'
 
@@ -313,7 +308,7 @@ def update_graph(sensor, type_, round_, temp_, hum_, measured_, etolonic_, heat_
         fig.add_trace(go.Scatter(x=x_arr, y=y_hum, mode=type_, name="GisMeteo press", hovertemplate="<b>%{y}</b>",
                                  visible='legendonly'))
 
-    if heat_:
+    if heat_ and min_ and max_:
         dc, ann = sc.heat(dt_begin, dt_end, min_, max_)
         fig.update_layout(shapes=dc, annotations=ann)
 

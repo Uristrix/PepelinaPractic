@@ -59,7 +59,7 @@ def sorting(y_temp, round_):
 
 
 def step(round_):
-    if round_ == "day" or round_ == 'maximum' or round_ == 'minimum':
+    if round_ == "day" or round_ == 'MAX' or round_ == 'MIN':
         return td(days=1)
     if round_ == 'hour':
         return td(hours=1)
@@ -224,7 +224,8 @@ def correct_dict(heat_, min_, max_):
             pos_max = i
             break
     print(heat_, pos_min, pos_max)
-    heat_ = heat_[pos_min: pos_max + 1]
+    heat_ = heat_[pos_min: pos_max]
+    print(heat)
     heat_[0]['min'] = min_
     heat_[-1]['max'] = max_
 
